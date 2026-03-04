@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Odontologos - Panel de Conversaciones</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0a1a; color: #e0e0e0; height: 100vh; overflow: hidden; }
+
+  /* Login */
+  #login { display: flex; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 100%); }
+  .login-box { background: #12122a; padding: 40px; border-radius: 16px; text-align: center; border: 1px solid #2a2a5a; }
+  .login-box h1 { color: #00d4aa; margin-bottom: 8px; font-size: 24px; }
+  .login-box p { color: #888; margin-bottom: 24px; font-size: 14px; }
+  .login-box input { background: #1a1a3e; border: 1px solid #3a3a6a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 16px; width: 260px; text-align: center; }
+  .login-box input:focus { outline: none; border-color: #00d4aa; }
+  .login-box button { background: #00d4aa; color: #0a0a1a; border: none; padding: 12px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 16px; display: block; width: 100%; }
+  .login-box button:hover { background: #00e8bb; }
+  .login-error { color: #ff6b6b; font-size: 13px; margin-top: 12px; display: none; }
+
+  /* App Layout */
+  #app { display: none; height: 100vh; }
+  .header { background: #12122a; border-bottom: 1px solid #2a2a5a; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 18px; color: #00d4aa; }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; }
+  .btn-primary { background: #00d4aa; color: #0a0a1a; }
+  .btn-primary:hover { background: #00e8bb; }
+  .btn-secondary { background: #2a2a5a; color: #ccc; }
+  .btn-secondary:hover { background: #3a3a6a; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Stats Bar */
+  .stats-bar { display: flex; gap: 16px; padding: 16px 24px; background: #0f0f25; border-bottom: 1px solid #1a1a3e; }
+  .stat-card { background: #12122a; padding: 12px 20px; border-radius: 10px; flex: 1; text-align: center; border: 1px solid #2a2a5a; }
+  .stat-value { font-size: 28px; font-weight: 700; }
+  .stat-label { font-size: 12px; color: #888; margin-top: 2px; }
+  .stat-green { color: #00d4aa; }
+  .stat-blue { color: #4ecdc4; }
+  .stat-red { color: #ff6b6b; }
+  .stat-yellow { color: #ffd93d; }
+
+  /* Main Content */
+  .main { display: flex; height: calc(100vh - 130px); }
+
+  /* Tabs */
+  .tabs { display: flex; background: #0f0f25; border-bottom: 1px solid #1a1a3e; }
+  .tab { padding: 10px 20px; cursor: pointer; font-size: 13px; color: #888; border-bottom: 2px solid transparent; }
+  .tab.active { color: #00d4aa; border-bottom-color: #00d4aa; }
+  .tab:hover { color: #ccc; }
+
+  /* Sidebar - Lead List */
+  .sidebar { width: 320px; min-width: 320px; background: #0f0f25; border-right: 1px solid #1a1a3e; display: flex; flex-direction: column; overflow: hidden; }
+  .search-box { padding: 12px; border-bottom: 1px solid #1a1a3e; }
+  .search-box input { width: 100%; background: #1a1a3e; border: 1px solid #2a2a5a; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+  .search-box input::placeholder { color: #666; }
+  .search-box input:focus { outline: none; border-color: #00d4aa; }
+  .lead-list { flex: 1; overflow-y: auto; }
+  .lead-item { padding: 14px 16px; border-bottom: 1px solid #1a1a3e; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+  .lead-item:hover { background: #12122a; }
+  .lead-item.active { background: #1a1a3e; border-left: 3px solid #00d4aa; }
+  .lead-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  .lead-avatar.responded { background: #0a3d2e; color: #00d4aa; }
+  .lead-avatar.no-response { background: #3d0a0a; color: #ff6b6b; }
+  .lead-info { flex: 1; min-width: 0; }
+  .lead-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lead-preview { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .lead-meta { text-align: right; flex-shrink: 0; }
+  .lead-time { font-size: 11px; color: #666; }
+  .lead-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-top: 4px; }
+  .badge-green { background: #0a3d2e; color: #00d4aa; }
+  .badge-red { background: #3d0a0a; color: #ff6b6b; }
+
+  /* Chat Area */
+  .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-header { padding: 16px 24px; border-bottom: 1px solid #1a1a3e; background: #12122a; display: flex; align-items: center; justify-content: space-between; }
+  .chat-header-info h2 { font-size: 16px; color: #fff; }
+  .chat-header-info p { font-size: 12px; color: #888; margin-top: 2px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px; }
+  .chat-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: #555; font-size: 15px; }
+
+  /* Message Bubbles */
+  .msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; position: relative; word-wrap: break-word; }
+  .msg-out { background: #005c4b; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg-in { background: #1a2e35; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg-time { font-size: 11px; color: #aaa; margin-top: 4px; text-align: right; }
+  .msg-date-separator { text-align: center; color: #666; font-size: 12px; padding: 8px 0; }
+  .msg-date-separator span { background: #1a1a3e; padding: 4px 16px; border-radius: 8px; }
+
+  /* Analysis Panel */
+  .analysis-panel { display: none; flex: 1; overflow-y: auto; padding: 24px; }
+  .analysis-panel.active { display: block; }
+  .analysis-section { background: #12122a; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2a5a; }
+  .analysis-section h3 { color: #00d4aa; margin-bottom: 12px; font-size: 16px; }
+  .analysis-section p { color: #ccc; line-height: 1.6; }
+  .analysis-section ul { list-style: none; }
+  .analysis-section ul li { padding: 8px 0; border-bottom: 1px solid #1a1a3e; color: #ccc; }
+  .analysis-section ul li:last-child { border-bottom: none; }
+  .analysis-section ul li::before { content: "→ "; color: #00d4aa; }
+
+  /* Lead Score Table */
+  .score-table { width: 100%; border-collapse: collapse; }
+  .score-table th { text-align: left; padding: 10px; color: #00d4aa; font-size: 13px; border-bottom: 1px solid #2a2a5a; }
+  .score-table td { padding: 10px; font-size: 13px; border-bottom: 1px solid #1a1a3e; }
+  .score-badge { display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; font-weight: 700; font-size: 14px; }
+
+  /* Loading */
+  .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: #888; }
+  .spinner { border: 3px solid #2a2a5a; border-top: 3px solid #00d4aa; border-radius: 50%; width: 30px; height: 30px; animation: spin 0.8s linear infinite; margin-right: 12px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2a5a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a6a; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: #12122a; border: 1px solid #00d4aa; color: #e0e0e0; padding: 12px 20px; border-radius: 10px; font-size: 14px; z-index: 1000; display: none; }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="login">
+  <div class="login-box">
+    <h1>Odontologos</h1>
+    <p>Panel de Conversaciones WhatsApp</p>
+    <input type="password" id="loginPassword" placeholder="Contrasena" autofocus>
+    <button onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="loginError">Contrasena incorrecta</div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <div class="header">
+    <h1>Odontologos — Conversaciones</h1>
+    <div class="header-actions">
+      <span id="lastUpdate" style="font-size:12px;color:#666"></span>
+      <button class="btn btn-secondary" onclick="refreshData()" id="btnRefresh">Actualizar</button>
+      <button class="btn btn-secondary" onclick="triggerRecolector()" id="btnRecolectar">Recolectar Ahora</button>
+      <button class="btn btn-primary" onclick="triggerAnalisis()" id="btnAnalisis">Ejecutar Analisis</button>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-value stat-green" id="statLeads">-</div><div class="stat-label">Leads</div></div>
+    <div class="stat-card"><div class="stat-value stat-blue" id="statRespondieron">-</div><div class="stat-label">Respondieron</div></div>
+    <div class="stat-card"><div class="stat-value stat-yellow" id="statTasa">-</div><div class="stat-label">Tasa Respuesta</div></div>
+    <div class="stat-card"><div class="stat-value stat-red" id="statMensajes">-</div><div class="stat-label">Mensajes</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="chats" onclick="switchTab('chats')">Conversaciones</div>
+    <div class="tab" data-tab="analysis" onclick="switchTab('analysis')">Analisis IA</div>
+  </div>
+
+  <div class="main">
+    <!-- Sidebar -->
+    <div class="sidebar" id="chatsSidebar">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar lead..." oninput="filterLeads()">
+      </div>
+      <div class="lead-list" id="leadList"></div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chatArea">
+      <div class="chat-empty" id="chatEmpty">Selecciona un lead para ver la conversacion</div>
+      <div id="chatContent" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden">
+        <div class="chat-header" id="chatHeader">
+          <div class="chat-header-info">
+            <h2 id="chatName">-</h2>
+            <p id="chatMeta">-</p>
+          </div>
+          <div>
+            <a id="chatLanding" href="#" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:none">Ver Landing</a>
+          </div>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+      </div>
+    </div>
+
+    <!-- Analysis Panel -->
+    <div class="analysis-panel" id="analysisPanel">
+      <div id="analysisContent">
+        <div class="loading"><div class="spinner"></div>Cargando analisis...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = 'https://n8n.srv1364640.hstgr.cloud/webhook';
+const PASSWORD = 'odonto2026';
+let appData = null;
+let selectedLead = null;
+
+// Login
+function doLogin() {
+  const pw = document.getElementById('loginPassword').value;
+  if (pw === PASSWORD) {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('app').style.flexDirection = 'column';
+    refreshData();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+
+// Data
+async function refreshData() {
+  const btn = document.getElementById('btnRefresh');
+  btn.disabled = true; btn.textContent = 'Cargando...';
+  try {
+    const r = await fetch(`${API_BASE}/odonto-dashboard-data`);
+    appData = await r.json();
+    renderStats();
+    renderLeadList();
+    if (selectedLead) renderChat(selectedLead);
+    renderAnalysis();
+    document.getElementById('lastUpdate').textContent = 'Act: ' + new Date().toLocaleTimeString('es-AR');
+  } catch(e) {
+    showToast('Error al cargar datos: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Actualizar';
+}
+
+function renderStats() {
+  if (!appData) return;
+  const s = appData.stats;
+  document.getElementById('statLeads').textContent = s.totalLeads;
+  document.getElementById('statRespondieron').textContent = s.respondieron;
+  const tasa = s.totalLeads > 0 ? Math.round(s.respondieron / s.totalLeads * 100) : 0;
+  document.getElementById('statTasa').textContent = tasa + '%';
+  document.getElementById('statMensajes').textContent = s.totalMensajes;
+}
+
+function renderLeadList() {
+  if (!appData) return;
+  const container = document.getElementById('leadList');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const leads = appData.leads.filter(l => {
+    if (!search) return true;
+    return (l.nombre || '').toLowerCase().includes(search) || (l.telefono || '').includes(search);
+  });
+
+  container.innerHTML = leads.map(l => {
+    const lastMsg = l.mensajes?.[l.mensajes.length - 1];
+    const preview = lastMsg ? (lastMsg.direccion === 'SALIENTE' ? 'Tu: ' : '') + lastMsg.mensaje.substring(0, 50) : '';
+    const time = lastMsg ? formatTime(lastMsg.timestamp) : '';
+    const initial = (l.nombre || '?')[0].toUpperCase();
+    const isActive = selectedLead?.telefono === l.telefono;
+
+    return `<div class="lead-item ${isActive ? 'active' : ''}" onclick="selectLead('${l.telefono}')">
+      <div class="lead-avatar ${l.respondio ? 'responded' : 'no-response'}">${initial}</div>
+      <div class="lead-info">
+        <div class="lead-name">${escHtml(l.nombre || l.telefono)}</div>
+        <div class="lead-preview">${escHtml(preview)}</div>
+      </div>
+      <div class="lead-meta">
+        <div class="lead-time">${time}</div>
+        <div class="lead-badge ${l.respondio ? 'badge-green' : 'badge-red'}">${l.respondio ? 'Respondio' : 'Sin resp.'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectLead(telefono) {
+  selectedLead = appData.leads.find(l => l.telefono === telefono);
+  renderLeadList();
+  renderChat(selectedLead);
+}
+
+function renderChat(lead) {
+  if (!lead) return;
+  document.getElementById('chatEmpty').style.display = 'none';
+  const content = document.getElementById('chatContent');
+  content.style.display = 'flex';
+
+  document.getElementById('chatName').textContent = lead.nombre || lead.telefono;
+  document.getElementById('chatMeta').textContent = `${lead.telefono} | ${lead.salientes} enviados, ${lead.entrantes} recibidos | ${lead.categoria || 'sin categoria'}`;
+
+  const landingBtn = document.getElementById('chatLanding');
+  if (lead.landing) {
+    landingBtn.style.display = 'inline-block';
+    landingBtn.href = lead.landing;
+  } else {
+    landingBtn.style.display = 'none';
+  }
+
+  const container = document.getElementById('chatMessages');
+  let lastDate = '';
+  let html = '';
+
+  for (const msg of lead.mensajes || []) {
+    const date = msg.timestamp ? new Date(msg.timestamp).toLocaleDateString('es-AR') : '';
+    if (date !== lastDate) {
+      html += `<div class="msg-date-separator"><span>${date}</span></div>`;
+      lastDate = date;
+    }
+    const cls = msg.direccion === 'SALIENTE' ? 'msg-out' : 'msg-in';
+    const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '';
+    html += `<div class="msg ${cls}">${escHtml(msg.mensaje)}<div class="msg-time">${time}</div></div>`;
+  }
+
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+function renderAnalysis() {
+  const panel = document.getElementById('analysisContent');
+  if (!appData?.analisis) {
+    panel.innerHTML = '<div class="analysis-section"><h3>Sin analisis disponible</h3><p>Ejecuta un analisis haciendo click en "Ejecutar Analisis" para obtener insights de Gemini sobre las conversaciones.</p></div>';
+    return;
+  }
+
+  const a = appData.analisis;
+  panel.innerHTML = `
+    <div class="analysis-section">
+      <h3>Resumen General</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+        <div><strong>Contactados:</strong> ${a.total_contactados || '-'}</div>
+        <div><strong>Respondieron:</strong> ${a.total_respondieron || '-'}</div>
+        <div><strong>Tasa:</strong> ${a.tasa_respuesta || '-'}</div>
+        <div><strong>Tiempo resp.:</strong> ${a.tiempo_promedio_respuesta || '-'}</div>
+      </div>
+    </div>
+    <div class="analysis-section">
+      <h3>Sentimiento General</h3>
+      <p>${escHtml(a.sentimiento_general || 'Sin datos')}</p>
+    </div>
+    <div class="analysis-section">
+      <h3>Objeciones Comunes</h3>
+      <ul>${(a.objeciones_comunes || '').split(' | ').map(o => o ? `<li>${escHtml(o)}</li>` : '').join('') || '<li>Sin objeciones detectadas</li>'}</ul>
+    </div>
+    <div class="analysis-section">
+      <h3>Mejores Mensajes</h3>
+      <ul>${(a.mejores_mensajes || '').split(' | ').map(m => m ? `<li>${escHtml(m)}</li>` : '').join('') || '<li>Sin datos</li>'}</ul>
+    </div>
+    <div class="analysis-section">
+      <h3>Recomendaciones</h3>
+      <ul>${(a.recomendaciones || '').split(' | ').map(r => r ? `<li>${escHtml(r)}</li>` : '').join('') || '<li>Sin recomendaciones</li>'}</ul>
+    </div>
+    <div class="analysis-section">
+      <h3>Score Promedio</h3>
+      <p style="font-size:32px;font-weight:700;color:#00d4aa">${a.score_promedio || '-'}/10</p>
+    </div>`;
+}
+
+// Tab switching
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  const sidebar = document.getElementById('chatsSidebar');
+  const chatArea = document.getElementById('chatArea');
+  const analysis = document.getElementById('analysisPanel');
+
+  if (tab === 'chats') {
+    sidebar.style.display = 'flex';
+    chatArea.style.display = 'flex';
+    analysis.style.display = 'none';
+    analysis.classList.remove('active');
+  } else {
+    sidebar.style.display = 'none';
+    chatArea.style.display = 'none';
+    analysis.style.display = 'block';
+    analysis.classList.add('active');
+  }
+}
+
+// Actions
+async function triggerRecolector() {
+  const btn = document.getElementById('btnRecolectar');
+  btn.disabled = true; btn.textContent = 'Recolectando...';
+  try {
+    await fetch(`${API_BASE}/odonto-recolectar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    showToast('Recoleccion completada');
+    await refreshData();
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Recolectar Ahora';
+}
+
+async function triggerAnalisis() {
+  const btn = document.getElementById('btnAnalisis');
+  btn.disabled = true; btn.textContent = 'Analizando...';
+  try {
+    const r = await fetch(`${API_BASE}/odonto-analisis`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    const result = await r.json();
+    showToast('Analisis completado');
+    await refreshData();
+    switchTab('analysis');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Ejecutar Analisis';
+}
+
+function filterLeads() { renderLeadList(); }
+
+// Helpers
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+}
+
+function escHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s || '';
+  return div.innerHTML;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+</script>
+</body>
+</html>
