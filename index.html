@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Odontologos - Panel de Conversaciones</title>
+<title>Odontologos - Panel de Control</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0a1a; color: #e0e0e0; height: 100vh; overflow: hidden; }
@@ -20,29 +20,31 @@
   .login-error { color: #ff6b6b; font-size: 13px; margin-top: 12px; display: none; }
 
   /* App Layout */
-  #app { display: none; height: 100vh; }
+  #app { display: none; height: 100vh; flex-direction: column; }
   .header { background: #12122a; border-bottom: 1px solid #2a2a5a; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
   .header h1 { font-size: 18px; color: #00d4aa; }
   .header-actions { display: flex; gap: 10px; align-items: center; }
-  .btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; }
+  .btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; transition: all 0.15s; }
   .btn-primary { background: #00d4aa; color: #0a0a1a; }
   .btn-primary:hover { background: #00e8bb; }
   .btn-secondary { background: #2a2a5a; color: #ccc; }
   .btn-secondary:hover { background: #3a3a6a; }
+  .btn-danger { background: #5a1a1a; color: #ff6b6b; }
+  .btn-danger:hover { background: #6a2a2a; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* Stats Bar */
-  .stats-bar { display: flex; gap: 16px; padding: 16px 24px; background: #0f0f25; border-bottom: 1px solid #1a1a3e; }
-  .stat-card { background: #12122a; padding: 12px 20px; border-radius: 10px; flex: 1; text-align: center; border: 1px solid #2a2a5a; }
-  .stat-value { font-size: 28px; font-weight: 700; }
-  .stat-label { font-size: 12px; color: #888; margin-top: 2px; }
+  .stats-bar { display: flex; gap: 12px; padding: 14px 24px; background: #0f0f25; border-bottom: 1px solid #1a1a3e; flex-wrap: wrap; }
+  .stat-card { background: #12122a; padding: 10px 16px; border-radius: 10px; flex: 1; min-width: 100px; text-align: center; border: 1px solid #2a2a5a; }
+  .stat-value { font-size: 24px; font-weight: 700; }
+  .stat-label { font-size: 11px; color: #888; margin-top: 2px; }
   .stat-green { color: #00d4aa; }
   .stat-blue { color: #4ecdc4; }
   .stat-red { color: #ff6b6b; }
   .stat-yellow { color: #ffd93d; }
-
-  /* Main Content */
-  .main { display: flex; height: calc(100vh - 130px); }
+  .stat-purple { color: #b794f6; }
+  .stat-orange { color: #f6a94b; }
 
   /* Tabs */
   .tabs { display: flex; background: #0f0f25; border-bottom: 1px solid #1a1a3e; }
@@ -50,38 +52,45 @@
   .tab.active { color: #00d4aa; border-bottom-color: #00d4aa; }
   .tab:hover { color: #ccc; }
 
-  /* Sidebar - Lead List */
+  /* Main Content */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
   .sidebar { width: 320px; min-width: 320px; background: #0f0f25; border-right: 1px solid #1a1a3e; display: flex; flex-direction: column; overflow: hidden; }
   .search-box { padding: 12px; border-bottom: 1px solid #1a1a3e; }
   .search-box input { width: 100%; background: #1a1a3e; border: 1px solid #2a2a5a; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
   .search-box input::placeholder { color: #666; }
   .search-box input:focus { outline: none; border-color: #00d4aa; }
   .lead-list { flex: 1; overflow-y: auto; }
-  .lead-item { padding: 14px 16px; border-bottom: 1px solid #1a1a3e; cursor: pointer; display: flex; align-items: center; gap: 12px; }
+  .lead-item { padding: 12px 16px; border-bottom: 1px solid #1a1a3e; cursor: pointer; display: flex; align-items: center; gap: 12px; }
   .lead-item:hover { background: #12122a; }
   .lead-item.active { background: #1a1a3e; border-left: 3px solid #00d4aa; }
-  .lead-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; }
+  .lead-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
   .lead-avatar.responded { background: #0a3d2e; color: #00d4aa; }
   .lead-avatar.no-response { background: #3d0a0a; color: #ff6b6b; }
+  .lead-avatar.pending { background: #2a2a5a; color: #888; }
   .lead-info { flex: 1; min-width: 0; }
-  .lead-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .lead-preview { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .lead-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lead-preview { font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
   .lead-meta { text-align: right; flex-shrink: 0; }
   .lead-time { font-size: 11px; color: #666; }
   .lead-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-top: 4px; }
   .badge-green { background: #0a3d2e; color: #00d4aa; }
   .badge-red { background: #3d0a0a; color: #ff6b6b; }
+  .badge-yellow { background: #3d3a0a; color: #ffd93d; }
+  .badge-blue { background: #0a2a3d; color: #4ecdc4; }
+  .badge-purple { background: #2a0a3d; color: #b794f6; }
+  .badge-gray { background: #2a2a3a; color: #888; }
 
   /* Chat Area */
   .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .chat-header { padding: 16px 24px; border-bottom: 1px solid #1a1a3e; background: #12122a; display: flex; align-items: center; justify-content: space-between; }
-  .chat-header-info h2 { font-size: 16px; color: #fff; }
+  .chat-header { padding: 14px 24px; border-bottom: 1px solid #1a1a3e; background: #12122a; display: flex; align-items: center; justify-content: space-between; }
+  .chat-header-info h2 { font-size: 15px; color: #fff; }
   .chat-header-info p { font-size: 12px; color: #888; margin-top: 2px; }
+  .chat-header-actions { display: flex; gap: 8px; align-items: center; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px; }
   .chat-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: #555; font-size: 15px; }
-
-  /* Message Bubbles */
-  .msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; position: relative; word-wrap: break-word; }
+  .msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; word-wrap: break-word; }
   .msg-out { background: #005c4b; align-self: flex-end; border-bottom-right-radius: 4px; }
   .msg-in { background: #1a2e35; align-self: flex-start; border-bottom-left-radius: 4px; }
   .msg-time { font-size: 11px; color: #aaa; margin-top: 4px; text-align: right; }
@@ -97,69 +106,78 @@
   .analysis-section ul { list-style: none; }
   .analysis-section ul li { padding: 8px 0; border-bottom: 1px solid #1a1a3e; color: #ccc; }
   .analysis-section ul li:last-child { border-bottom: none; }
-  .analysis-section ul li::before { content: "→ "; color: #00d4aa; }
+  .analysis-section ul li::before { content: "\2192 "; color: #00d4aa; }
 
-  /* Lead Score Table */
-  .score-table { width: 100%; border-collapse: collapse; }
-  .score-table th { text-align: left; padding: 10px; color: #00d4aa; font-size: 13px; border-bottom: 1px solid #2a2a5a; }
-  .score-table td { padding: 10px; font-size: 13px; border-bottom: 1px solid #1a1a3e; }
-  .score-badge { display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; font-weight: 700; font-size: 14px; }
+  /* Outreach Panel */
+  .outreach-panel { display: none; flex: 1; overflow-y: auto; padding: 24px; flex-direction: column; gap: 20px; }
+  .outreach-panel.active { display: flex; }
 
-  /* Loading */
+  /* Pipeline */
+  .pipeline { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pipeline-stage { background: #12122a; border-radius: 12px; padding: 16px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #2a2a5a; cursor: pointer; transition: all 0.15s; }
+  .pipeline-stage:hover { border-color: #00d4aa; }
+  .pipeline-stage.selected { border-color: #00d4aa; background: #1a1a3e; }
+  .pipeline-count { font-size: 28px; font-weight: 700; }
+  .pipeline-label { font-size: 11px; color: #888; margin-top: 4px; }
+  .pipeline-bar { height: 4px; border-radius: 2px; margin-top: 8px; }
+
+  /* Outreach Table */
+  .outreach-table { width: 100%; border-collapse: collapse; }
+  .outreach-table th { text-align: left; padding: 10px 12px; color: #00d4aa; font-size: 12px; border-bottom: 1px solid #2a2a5a; position: sticky; top: 0; background: #12122a; }
+  .outreach-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #1a1a3e; }
+  .outreach-table tr:hover { background: #1a1a3e; }
+  .outreach-table-wrap { background: #12122a; border-radius: 12px; border: 1px solid #2a2a5a; overflow: auto; max-height: calc(100vh - 380px); }
+
+  /* Loading / Toast / Scrollbar */
   .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: #888; }
   .spinner { border: 3px solid #2a2a5a; border-top: 3px solid #00d4aa; border-radius: 50%; width: 30px; height: 30px; animation: spin 0.8s linear infinite; margin-right: 12px; }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #2a2a5a; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #3a3a6a; }
-
-  /* Toast */
   .toast { position: fixed; bottom: 24px; right: 24px; background: #12122a; border: 1px solid #00d4aa; color: #e0e0e0; padding: 12px 20px; border-radius: 10px; font-size: 14px; z-index: 1000; display: none; }
 </style>
 </head>
 <body>
 
-<!-- Login Screen -->
 <div id="login">
   <div class="login-box">
-    <h1>Odontologos</h1>
-    <p>Panel de Conversaciones WhatsApp</p>
+    <h1>Odontologos BA</h1>
+    <p>Panel de Control — Outreach + Conversaciones</p>
     <input type="password" id="loginPassword" placeholder="Contrasena" autofocus>
     <button onclick="doLogin()">Entrar</button>
     <div class="login-error" id="loginError">Contrasena incorrecta</div>
   </div>
 </div>
 
-<!-- Main App -->
 <div id="app">
   <div class="header">
-    <h1>Odontologos — Conversaciones</h1>
+    <h1>Odontologos BA</h1>
     <div class="header-actions">
       <span id="lastUpdate" style="font-size:12px;color:#666"></span>
       <button class="btn btn-secondary" onclick="refreshData()" id="btnRefresh">Actualizar</button>
-      <button class="btn btn-secondary" onclick="triggerRecolector()" id="btnRecolectar">Recolectar Ahora</button>
-      <button class="btn btn-primary" onclick="triggerAnalisis()" id="btnAnalisis">Ejecutar Analisis</button>
+      <button class="btn btn-secondary" onclick="triggerRecolector()" id="btnRecolectar">Recolectar</button>
+      <button class="btn btn-primary" onclick="triggerAnalisis()" id="btnAnalisis">Analisis IA</button>
     </div>
   </div>
 
-  <div class="stats-bar">
-    <div class="stat-card"><div class="stat-value stat-green" id="statLeads">-</div><div class="stat-label">Leads</div></div>
-    <div class="stat-card"><div class="stat-value stat-blue" id="statRespondieron">-</div><div class="stat-label">Respondieron</div></div>
-    <div class="stat-card"><div class="stat-value stat-yellow" id="statTasa">-</div><div class="stat-label">Tasa Respuesta</div></div>
-    <div class="stat-card"><div class="stat-value stat-red" id="statMensajes">-</div><div class="stat-label">Mensajes</div></div>
-  </div>
+  <div class="stats-bar" id="statsBar"></div>
 
   <div class="tabs">
-    <div class="tab active" data-tab="chats" onclick="switchTab('chats')">Conversaciones</div>
+    <div class="tab active" data-tab="outreach" onclick="switchTab('outreach')">Outreach</div>
+    <div class="tab" data-tab="chats" onclick="switchTab('chats')">Conversaciones</div>
     <div class="tab" data-tab="analysis" onclick="switchTab('analysis')">Analisis IA</div>
   </div>
 
   <div class="main">
-    <!-- Sidebar -->
-    <div class="sidebar" id="chatsSidebar">
+    <!-- Outreach Panel -->
+    <div class="outreach-panel active" id="outreachPanel">
+      <div id="pipelineSection"></div>
+      <div id="outreachTableSection"></div>
+    </div>
+
+    <!-- Chat Sidebar -->
+    <div class="sidebar" id="chatsSidebar" style="display:none">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Buscar lead..." oninput="filterLeads()">
       </div>
@@ -167,16 +185,17 @@
     </div>
 
     <!-- Chat Area -->
-    <div class="chat-area" id="chatArea">
+    <div class="chat-area" id="chatArea" style="display:none">
       <div class="chat-empty" id="chatEmpty">Selecciona un lead para ver la conversacion</div>
-      <div id="chatContent" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden">
+      <div id="chatContent" style="display:none;flex-direction:column;overflow:hidden;flex:1">
         <div class="chat-header" id="chatHeader">
           <div class="chat-header-info">
             <h2 id="chatName">-</h2>
             <p id="chatMeta">-</p>
           </div>
-          <div>
-            <a id="chatLanding" href="#" target="_blank" class="btn btn-secondary" style="text-decoration:none;display:none">Ver Landing</a>
+          <div class="chat-header-actions">
+            <button class="btn btn-sm btn-primary" id="btnMarkResp" onclick="markRespondido()">Marcar respondido</button>
+            <a id="chatLanding" href="#" target="_blank" class="btn btn-sm btn-secondary" style="text-decoration:none;display:none">Ver Landing</a>
           </div>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
@@ -199,14 +218,12 @@ const API_BASE = 'https://n8n.srv1364640.hstgr.cloud/webhook';
 const PASSWORD = 'odonto2026';
 let appData = null;
 let selectedLead = null;
+let pipelineFilter = 'all';
 
-// Login
 function doLogin() {
-  const pw = document.getElementById('loginPassword').value;
-  if (pw === PASSWORD) {
+  if (document.getElementById('loginPassword').value === PASSWORD) {
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    document.getElementById('app').style.flexDirection = 'column';
     refreshData();
   } else {
     document.getElementById('loginError').style.display = 'block';
@@ -214,7 +231,6 @@ function doLogin() {
 }
 document.getElementById('loginPassword').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
 
-// Data
 async function refreshData() {
   const btn = document.getElementById('btnRefresh');
   btn.disabled = true; btn.textContent = 'Cargando...';
@@ -222,8 +238,13 @@ async function refreshData() {
     const r = await fetch(`${API_BASE}/odonto-dashboard-data`);
     appData = await r.json();
     renderStats();
+    renderPipeline();
+    renderOutreachTable();
     renderLeadList();
-    if (selectedLead) renderChat(selectedLead);
+    if (selectedLead) {
+      selectedLead = appData.leads.find(l => l.telefono === selectedLead.telefono) || selectedLead;
+      renderChat(selectedLead);
+    }
     renderAnalysis();
     document.getElementById('lastUpdate').textContent = 'Act: ' + new Date().toLocaleTimeString('es-AR');
   } catch(e) {
@@ -232,20 +253,132 @@ async function refreshData() {
   btn.disabled = false; btn.textContent = 'Actualizar';
 }
 
+// Stats
 function renderStats() {
   if (!appData) return;
-  const s = appData.stats;
-  document.getElementById('statLeads').textContent = s.totalLeads;
-  document.getElementById('statRespondieron').textContent = s.respondieron;
-  const tasa = s.totalLeads > 0 ? Math.round(s.respondieron / s.totalLeads * 100) : 0;
-  document.getElementById('statTasa').textContent = tasa + '%';
-  document.getElementById('statMensajes').textContent = s.totalMensajes;
+  const p = appData.pipeline || {};
+  const s = appData.stats || {};
+  const ta = appData.todayActivity || {};
+  const contactados = (p.wa_inicial || 0) + (p.wa_followup1 || 0) + (p.wa_breakup || 0) + (p.respondido || 0) + (p.enviado_legacy || 0);
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card"><div class="stat-value stat-green">${s.totalCalientes || 0}</div><div class="stat-label">Leads Calientes</div></div>
+    <div class="stat-card"><div class="stat-value stat-blue">${contactados}</div><div class="stat-label">Contactados</div></div>
+    <div class="stat-card"><div class="stat-value stat-yellow">${p.pendiente || 0}</div><div class="stat-label">Pendientes</div></div>
+    <div class="stat-card"><div class="stat-value stat-purple">${s.respondieron || 0}</div><div class="stat-label">Respondieron</div></div>
+    <div class="stat-card"><div class="stat-value stat-orange">${ta.sentToday || 0}</div><div class="stat-label">Hoy</div></div>
+    <div class="stat-card"><div class="stat-value stat-red">${p.sin_whatsapp || 0}</div><div class="stat-label">Sin WA</div></div>
+  `;
 }
 
+// Pipeline
+function renderPipeline() {
+  if (!appData?.pipeline) return;
+  const p = appData.pipeline;
+  const stages = [
+    { key: 'all', label: 'Todos', count: Object.values(p).reduce((a,b) => a+b, 0), color: '#4ecdc4' },
+    { key: 'pendiente', label: 'Pendientes', count: p.pendiente, color: '#ffd93d' },
+    { key: 'wa_inicial', label: 'WA Inicial', count: p.wa_inicial, color: '#4ecdc4' },
+    { key: 'wa_followup1', label: 'Followup', count: p.wa_followup1, color: '#b794f6' },
+    { key: 'wa_breakup', label: 'Breakup', count: p.wa_breakup, color: '#f6a94b' },
+    { key: 'respondido', label: 'Respondieron', count: p.respondido, color: '#00d4aa' },
+    { key: 'sin_whatsapp', label: 'Sin WA', count: p.sin_whatsapp, color: '#ff6b6b' },
+    { key: 'enviado_legacy', label: 'Legacy', count: p.enviado_legacy, color: '#888' },
+  ];
+  const total = stages[0].count || 1;
+
+  document.getElementById('pipelineSection').innerHTML = `
+    <div class="pipeline">
+      ${stages.map(s => `
+        <div class="pipeline-stage ${pipelineFilter === s.key ? 'selected' : ''}" onclick="filterPipeline('${s.key}')">
+          <div class="pipeline-count" style="color:${s.color}">${s.count}</div>
+          <div class="pipeline-label">${s.label}</div>
+          <div class="pipeline-bar" style="background:${s.color};width:${Math.max(5, s.count/total*100)}%"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function filterPipeline(key) {
+  pipelineFilter = key;
+  renderPipeline();
+  renderOutreachTable();
+}
+
+// Outreach Table
+function renderOutreachTable() {
+  if (!appData?.outreachLeads) return;
+  let leads = appData.outreachLeads;
+
+  if (pipelineFilter !== 'all') {
+    leads = leads.filter(l => {
+      const e = (l.estado_envio || '').toLowerCase();
+      if (pipelineFilter === 'pendiente') return e === 'pendiente' || e === '';
+      if (pipelineFilter === 'sin_whatsapp') return e === 'sin_whatsapp' || e === 'sin whatsapp';
+      if (pipelineFilter === 'enviado_legacy') return e === 'enviado' || e === 'entregado';
+      return e === pipelineFilter;
+    });
+  }
+
+  const estadoBadge = (e) => {
+    const el = (e || '').toLowerCase();
+    if (el === 'pendiente' || el === '') return '<span class="lead-badge badge-yellow">Pendiente</span>';
+    if (el === 'wa_inicial') return '<span class="lead-badge badge-blue">WA Inicial</span>';
+    if (el === 'wa_followup1') return '<span class="lead-badge badge-purple">Followup</span>';
+    if (el === 'wa_breakup') return '<span class="lead-badge badge-gray">Breakup</span>';
+    if (el === 'respondido') return '<span class="lead-badge badge-green">Respondido</span>';
+    if (el === 'sin_whatsapp' || el === 'sin whatsapp') return '<span class="lead-badge badge-red">Sin WA</span>';
+    if (el === 'enviado' || el === 'entregado') return '<span class="lead-badge badge-gray">Legacy</span>';
+    return `<span class="lead-badge badge-gray">${escHtml(e)}</span>`;
+  };
+
+  document.getElementById('outreachTableSection').innerHTML = `
+    <div class="outreach-table-wrap">
+      <table class="outreach-table">
+        <thead><tr>
+          <th>Lead</th>
+          <th>Estado</th>
+          <th>Fecha envio</th>
+          <th>Landing</th>
+          <th>Rating</th>
+          <th>Acciones</th>
+        </tr></thead>
+        <tbody>
+          ${leads.map(l => `<tr>
+            <td>
+              <strong>${escHtml(l.nombre)}</strong>
+              <div style="font-size:11px;color:#888">${escHtml(l.telefono)} ${l.ciudad ? '| ' + escHtml(l.ciudad) : ''}</div>
+            </td>
+            <td>${estadoBadge(l.estado_envio)}</td>
+            <td style="font-size:12px;color:#aaa">${l.fecha_envio || '-'}</td>
+            <td>${l.landing ? `<a href="${escHtml(l.landing)}" target="_blank" style="color:#4ecdc4;font-size:12px">Ver</a>` : '-'}</td>
+            <td style="color:#ffd93d">${l.rating || '-'}</td>
+            <td>
+              ${l.respondio ? '<span style="color:#00d4aa;font-size:12px">Respondio</span>' :
+                (l.estado_envio || '').toLowerCase() !== 'respondido' ?
+                `<button class="btn btn-sm btn-primary" onclick="markRespondidoByPhone('${l.telefono}')">Respondido</button>` : '<span style="color:#00d4aa;font-size:12px">Marcado</span>'}
+              ${l.tieneConversacion ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px" onclick="goToChat('${l.telefono}')">Chat</button>` : ''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function goToChat(telefono) {
+  selectedLead = appData.leads.find(l => l.telefono === telefono) || appData.outreachLeads.find(l => l.telefono === telefono);
+  switchTab('chats');
+  renderLeadList();
+  if (selectedLead) renderChat(selectedLead);
+}
+
+// Chat
 function renderLeadList() {
   if (!appData) return;
   const container = document.getElementById('leadList');
-  const search = document.getElementById('searchInput').value.toLowerCase();
+  const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
   const leads = appData.leads.filter(l => {
     if (!search) return true;
     return (l.nombre || '').toLowerCase().includes(search) || (l.telefono || '').includes(search);
@@ -285,42 +418,67 @@ function renderChat(lead) {
   content.style.display = 'flex';
 
   document.getElementById('chatName').textContent = lead.nombre || lead.telefono;
-  document.getElementById('chatMeta').textContent = `${lead.telefono} | ${lead.salientes} enviados, ${lead.entrantes} recibidos | ${lead.categoria || 'sin categoria'}`;
+  document.getElementById('chatMeta').textContent = `${lead.telefono} | ${lead.salientes} enviados, ${lead.entrantes} recibidos | ${lead.estado_envio || 'sin estado'}`;
 
   const landingBtn = document.getElementById('chatLanding');
-  if (lead.landing) {
-    landingBtn.style.display = 'inline-block';
-    landingBtn.href = lead.landing;
+  if (lead.landing) { landingBtn.style.display = 'inline-block'; landingBtn.href = lead.landing; }
+  else { landingBtn.style.display = 'none'; }
+
+  const btnResp = document.getElementById('btnMarkResp');
+  if ((lead.estado_envio || '').toLowerCase() === 'respondido') {
+    btnResp.textContent = 'Ya marcado';
+    btnResp.disabled = true;
   } else {
-    landingBtn.style.display = 'none';
+    btnResp.textContent = 'Marcar respondido';
+    btnResp.disabled = false;
   }
 
   const container = document.getElementById('chatMessages');
-  let lastDate = '';
-  let html = '';
-
+  let lastDate = '', html = '';
   for (const msg of lead.mensajes || []) {
     const date = msg.timestamp ? new Date(msg.timestamp).toLocaleDateString('es-AR') : '';
-    if (date !== lastDate) {
-      html += `<div class="msg-date-separator"><span>${date}</span></div>`;
-      lastDate = date;
-    }
+    if (date !== lastDate) { html += `<div class="msg-date-separator"><span>${date}</span></div>`; lastDate = date; }
     const cls = msg.direccion === 'SALIENTE' ? 'msg-out' : 'msg-in';
     const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '';
     html += `<div class="msg ${cls}">${escHtml(msg.mensaje)}<div class="msg-time">${time}</div></div>`;
   }
-
   container.innerHTML = html;
   container.scrollTop = container.scrollHeight;
 }
 
+// Mark respondido
+async function markRespondido() {
+  if (!selectedLead) return;
+  await markRespondidoByPhone(selectedLead.telefono);
+}
+
+async function markRespondidoByPhone(telefono) {
+  try {
+    showToast('Marcando como respondido...');
+    const r = await fetch(`${API_BASE}/odonto-mark-respondido`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefono, action: 'respondido' })
+    });
+    const result = await r.json();
+    if (result.ok) {
+      showToast('Marcado como respondido');
+      await refreshData();
+    } else {
+      showToast('Error: ' + (result.error || 'desconocido'));
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+// Analysis
 function renderAnalysis() {
   const panel = document.getElementById('analysisContent');
   if (!appData?.analisis) {
-    panel.innerHTML = '<div class="analysis-section"><h3>Sin analisis disponible</h3><p>Ejecuta un analisis haciendo click en "Ejecutar Analisis" para obtener insights de Gemini sobre las conversaciones.</p></div>';
+    panel.innerHTML = '<div class="analysis-section"><h3>Sin analisis disponible</h3><p>Ejecuta un analisis para obtener insights de Gemini.</p></div>';
     return;
   }
-
   const a = appData.analisis;
   panel.innerHTML = `
     <div class="analysis-section">
@@ -332,46 +490,23 @@ function renderAnalysis() {
         <div><strong>Tiempo resp.:</strong> ${a.tiempo_promedio_respuesta || '-'}</div>
       </div>
     </div>
-    <div class="analysis-section">
-      <h3>Sentimiento General</h3>
-      <p>${escHtml(a.sentimiento_general || 'Sin datos')}</p>
-    </div>
-    <div class="analysis-section">
-      <h3>Objeciones Comunes</h3>
-      <ul>${(a.objeciones_comunes || '').split(' | ').map(o => o ? `<li>${escHtml(o)}</li>` : '').join('') || '<li>Sin objeciones detectadas</li>'}</ul>
-    </div>
-    <div class="analysis-section">
-      <h3>Mejores Mensajes</h3>
-      <ul>${(a.mejores_mensajes || '').split(' | ').map(m => m ? `<li>${escHtml(m)}</li>` : '').join('') || '<li>Sin datos</li>'}</ul>
-    </div>
-    <div class="analysis-section">
-      <h3>Recomendaciones</h3>
-      <ul>${(a.recomendaciones || '').split(' | ').map(r => r ? `<li>${escHtml(r)}</li>` : '').join('') || '<li>Sin recomendaciones</li>'}</ul>
-    </div>
-    <div class="analysis-section">
-      <h3>Score Promedio</h3>
-      <p style="font-size:32px;font-weight:700;color:#00d4aa">${a.score_promedio || '-'}/10</p>
-    </div>`;
+    <div class="analysis-section"><h3>Sentimiento</h3><p>${escHtml(a.sentimiento_general || '-')}</p></div>
+    <div class="analysis-section"><h3>Objeciones</h3><ul>${(a.objeciones_comunes || '').split(' | ').filter(Boolean).map(o => `<li>${escHtml(o)}</li>`).join('') || '<li>-</li>'}</ul></div>
+    <div class="analysis-section"><h3>Mejores Mensajes</h3><ul>${(a.mejores_mensajes || '').split(' | ').filter(Boolean).map(m => `<li>${escHtml(m)}</li>`).join('') || '<li>-</li>'}</ul></div>
+    <div class="analysis-section"><h3>Recomendaciones</h3><ul>${(a.recomendaciones || '').split(' | ').filter(Boolean).map(r => `<li>${escHtml(r)}</li>`).join('') || '<li>-</li>'}</ul></div>
+    <div class="analysis-section"><h3>Score</h3><p style="font-size:32px;font-weight:700;color:#00d4aa">${a.score_promedio || '-'}/10</p></div>
+  `;
 }
 
 // Tab switching
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  const sidebar = document.getElementById('chatsSidebar');
-  const chatArea = document.getElementById('chatArea');
-  const analysis = document.getElementById('analysisPanel');
-
-  if (tab === 'chats') {
-    sidebar.style.display = 'flex';
-    chatArea.style.display = 'flex';
-    analysis.style.display = 'none';
-    analysis.classList.remove('active');
-  } else {
-    sidebar.style.display = 'none';
-    chatArea.style.display = 'none';
-    analysis.style.display = 'block';
-    analysis.classList.add('active');
-  }
+  document.getElementById('outreachPanel').style.display = tab === 'outreach' ? 'flex' : 'none';
+  document.getElementById('outreachPanel').classList.toggle('active', tab === 'outreach');
+  document.getElementById('chatsSidebar').style.display = tab === 'chats' ? 'flex' : 'none';
+  document.getElementById('chatArea').style.display = tab === 'chats' ? 'flex' : 'none';
+  document.getElementById('analysisPanel').style.display = tab === 'analysis' ? 'block' : 'none';
+  document.getElementById('analysisPanel').classList.toggle('active', tab === 'analysis');
 }
 
 // Actions
@@ -382,48 +517,36 @@ async function triggerRecolector() {
     await fetch(`${API_BASE}/odonto-recolectar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     showToast('Recoleccion completada');
     await refreshData();
-  } catch(e) {
-    showToast('Error: ' + e.message);
-  }
-  btn.disabled = false; btn.textContent = 'Recolectar Ahora';
+  } catch(e) { showToast('Error: ' + e.message); }
+  btn.disabled = false; btn.textContent = 'Recolectar';
 }
 
 async function triggerAnalisis() {
   const btn = document.getElementById('btnAnalisis');
   btn.disabled = true; btn.textContent = 'Analizando...';
   try {
-    const r = await fetch(`${API_BASE}/odonto-analisis`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-    const result = await r.json();
+    await fetch(`${API_BASE}/odonto-analisis`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
     showToast('Analisis completado');
     await refreshData();
     switchTab('analysis');
-  } catch(e) {
-    showToast('Error: ' + e.message);
-  }
-  btn.disabled = false; btn.textContent = 'Ejecutar Analisis';
+  } catch(e) { showToast('Error: ' + e.message); }
+  btn.disabled = false; btn.textContent = 'Analisis IA';
 }
 
 function filterLeads() { renderLeadList(); }
 
-// Helpers
 function formatTime(ts) {
   if (!ts) return '';
   const d = new Date(ts);
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === new Date().toDateString()) return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
 }
 
-function escHtml(s) {
-  const div = document.createElement('div');
-  div.textContent = s || '';
-  return div.innerHTML;
-}
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.display = 'block';
+  t.textContent = msg; t.style.display = 'block';
   setTimeout(() => t.style.display = 'none', 3000);
 }
 </script>
