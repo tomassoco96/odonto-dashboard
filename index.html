@@ -136,6 +136,19 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #2a2a5a; border-radius: 3px; }
   .toast { position: fixed; bottom: 24px; right: 24px; background: #12122a; border: 1px solid #00d4aa; color: #e0e0e0; padding: 12px 20px; border-radius: 10px; font-size: 14px; z-index: 1000; display: none; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 900; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #12122a; border: 1px solid #2a2a5a; border-radius: 16px; padding: 28px; width: 480px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { color: #00d4aa; font-size: 18px; margin-bottom: 20px; }
+  .modal label { display: block; font-size: 12px; color: #aaa; margin-bottom: 4px; margin-top: 14px; }
+  .modal input, .modal select { width: 100%; background: #1a1a3e; border: 1px solid #2a2a5a; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 14px; }
+  .modal input:focus, .modal select:focus { outline: none; border-color: #00d4aa; }
+  .modal .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal .form-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+  .modal .result-box { margin-top: 16px; background: #0a3d2e; border: 1px solid #00d4aa; border-radius: 10px; padding: 16px; display: none; }
+  .modal .result-box a { color: #00d4aa; word-break: break-all; }
 </style>
 </head>
 <body>
@@ -157,6 +170,7 @@
       <span id="lastUpdate" style="font-size:12px;color:#666"></span>
       <button class="btn btn-secondary" onclick="refreshData()" id="btnRefresh">Actualizar</button>
       <button class="btn btn-secondary" onclick="triggerRecolector()" id="btnRecolectar">Recolectar</button>
+      <button class="btn btn-primary" onclick="openAddLead()">+ Lead</button>
       <button class="btn btn-primary" onclick="triggerAnalisis()" id="btnAnalisis">Analisis IA</button>
     </div>
   </div>
@@ -213,6 +227,53 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Modal Agregar Lead -->
+<div class="modal-overlay" id="modalAddLead" onclick="if(event.target===this)closeAddLead()">
+  <div class="modal">
+    <h2>Agregar Lead + Generar Landing</h2>
+    <label>Nombre de la clinica *</label>
+    <input id="al_nombre" placeholder="Ej: Odontologia Dra. Garcia">
+    <div class="form-row">
+      <div><label>Telefono *</label><input id="al_telefono" placeholder="Ej: 1143828950"></div>
+      <div><label>Ciudad</label><input id="al_ciudad" placeholder="Buenos Aires" value="Buenos Aires"></div>
+    </div>
+    <label>Direccion</label>
+    <input id="al_direccion" placeholder="Ej: Av. Santa Fe 2345, Palermo">
+    <div class="form-row">
+      <div><label>Email</label><input id="al_email" placeholder="Opcional"></div>
+      <div><label>Rating</label><input id="al_rating" placeholder="4.8" value="4.8"></div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Variante visual</label>
+        <select id="al_variante">
+          <option value="0">Aleatorio</option>
+          <option value="1">1 - Navy + Gold</option>
+          <option value="2">2 - Emerald + Coral</option>
+          <option value="3">3 - Dark + Rose Gold</option>
+          <option value="4">4 - Sky Blue + Amber</option>
+        </select>
+      </div>
+      <div>
+        <label>Agregar al Sheet?</label>
+        <select id="al_addSheet">
+          <option value="true">Si, agregar como lead</option>
+          <option value="false">No, solo generar landing</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="closeAddLead()">Cancelar</button>
+      <button class="btn btn-primary" id="btnCreateLanding" onclick="createLanding()">Crear Landing</button>
+    </div>
+    <div class="result-box" id="landingResult">
+      <strong>Landing generada!</strong>
+      <p style="margin-top:8px"><a id="landingUrl" href="#" target="_blank"></a></p>
+      <p style="margin-top:8px;font-size:12px;color:#aaa">Vercel puede tardar ~30s en desplegar. Si la pagina no carga, espera un momento y recarga.</p>
+    </div>
+  </div>
+</div>
 
 <script>
 const API_BASE = 'https://n8n.srv1364640.hstgr.cloud/webhook';
@@ -578,6 +639,63 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.style.display = 'block';
   setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// Add Lead + Landing
+function openAddLead() {
+  document.getElementById('modalAddLead').classList.add('show');
+  document.getElementById('landingResult').style.display = 'none';
+  document.getElementById('btnCreateLanding').disabled = false;
+  document.getElementById('btnCreateLanding').textContent = 'Crear Landing';
+  document.getElementById('al_nombre').focus();
+}
+function closeAddLead() {
+  document.getElementById('modalAddLead').classList.remove('show');
+}
+async function createLanding() {
+  const nombre = document.getElementById('al_nombre').value.trim();
+  const telefono = document.getElementById('al_telefono').value.trim();
+  if (!nombre) { showToast('Falta el nombre de la clinica'); return; }
+
+  const btn = document.getElementById('btnCreateLanding');
+  btn.disabled = true; btn.textContent = 'Generando...';
+
+  const body = {
+    nombre,
+    telefono,
+    ciudad: document.getElementById('al_ciudad').value.trim() || 'Buenos Aires',
+    direccion: document.getElementById('al_direccion').value.trim(),
+    email: document.getElementById('al_email').value.trim(),
+    rating: document.getElementById('al_rating').value.trim() || '4.8',
+    variante: parseInt(document.getElementById('al_variante').value) || undefined,
+    addToSheet: document.getElementById('al_addSheet').value === 'true'
+  };
+  if (body.variante === 0) delete body.variante;
+
+  try {
+    const r = await fetch(`${API_BASE}/odonto-crear-landing`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const result = await r.json();
+    if (result.ok) {
+      const box = document.getElementById('landingResult');
+      const link = document.getElementById('landingUrl');
+      link.href = result.url;
+      link.textContent = result.url;
+      box.style.display = 'block';
+      btn.textContent = 'Listo!';
+      showToast('Landing generada para ' + result.nombre);
+      if (body.addToSheet) await refreshData();
+    } else {
+      showToast('Error: ' + (result.error || 'desconocido'));
+      btn.disabled = false; btn.textContent = 'Crear Landing';
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Crear Landing';
+  }
 }
 </script>
 </body>
