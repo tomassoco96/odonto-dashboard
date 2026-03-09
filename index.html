@@ -195,6 +195,7 @@
           </div>
           <div class="chat-header-actions">
             <button class="btn btn-sm btn-primary" id="btnMarkResp" onclick="markRespondido()">Marcar respondido</button>
+            <button class="btn btn-sm btn-danger" id="btnUndoResp" onclick="undoRespondidoSelected()" style="display:none">Deshacer</button>
             <a id="chatLanding" href="#" target="_blank" class="btn btn-sm btn-secondary" style="text-decoration:none;display:none">Ver Landing</a>
           </div>
         </div>
@@ -357,7 +358,8 @@ function renderOutreachTable() {
             <td>
               ${l.respondio ? '<span style="color:#00d4aa;font-size:12px">Respondio</span>' :
                 (l.estado_envio || '').toLowerCase() !== 'respondido' ?
-                `<button class="btn btn-sm btn-primary" onclick="markRespondidoByPhone('${l.telefono}')">Respondido</button>` : '<span style="color:#00d4aa;font-size:12px">Marcado</span>'}
+                `<button class="btn btn-sm btn-primary" onclick="markRespondidoByPhone('${l.telefono}')">Respondido</button>` :
+                `<span style="color:#00d4aa;font-size:12px">Marcado</span> <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="undoRespondido('${l.telefono}')">Deshacer</button>`}
               ${l.tieneConversacion ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px" onclick="goToChat('${l.telefono}')">Chat</button>` : ''}
             </td>
           </tr>`).join('')}
@@ -425,12 +427,15 @@ function renderChat(lead) {
   else { landingBtn.style.display = 'none'; }
 
   const btnResp = document.getElementById('btnMarkResp');
+  const btnUndo = document.getElementById('btnUndoResp');
   if ((lead.estado_envio || '').toLowerCase() === 'respondido') {
     btnResp.textContent = 'Ya marcado';
     btnResp.disabled = true;
+    btnUndo.style.display = 'inline-block';
   } else {
     btnResp.textContent = 'Marcar respondido';
     btnResp.disabled = false;
+    btnUndo.style.display = 'none';
   }
 
   const container = document.getElementById('chatMessages');
@@ -463,6 +468,31 @@ async function markRespondidoByPhone(telefono) {
     const result = await r.json();
     if (result.ok) {
       showToast('Marcado como respondido');
+      await refreshData();
+    } else {
+      showToast('Error: ' + (result.error || 'desconocido'));
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function undoRespondidoSelected() {
+  if (!selectedLead) return;
+  await undoRespondido(selectedLead.telefono);
+}
+
+async function undoRespondido(telefono) {
+  try {
+    showToast('Revirtiendo...');
+    const r = await fetch(`${API_BASE}/odonto-mark-respondido`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefono, action: 'undo' })
+    });
+    const result = await r.json();
+    if (result.ok) {
+      showToast('Revertido a ' + result.newEstado);
       await refreshData();
     } else {
       showToast('Error: ' + (result.error || 'desconocido'));
