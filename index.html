@@ -457,6 +457,7 @@ function countCategories() {
 function renderPipeline() {
   if (!appData?.pipeline) return;
   const p = appData.pipeline;
+  const cats = countCategories();
   const stages = [
     { key: 'all', label: 'Todos', count: Object.values(p).reduce((a,b) => a+b, 0), color: '#4ecdc4' },
     { key: 'pendiente', label: 'Pendientes', count: p.pendiente, color: '#ffd93d' },
@@ -464,6 +465,10 @@ function renderPipeline() {
     { key: 'wa_followup1', label: 'Followup', count: p.wa_followup1, color: '#b794f6' },
     { key: 'wa_breakup', label: 'Breakup', count: p.wa_breakup, color: '#f6a94b' },
     { key: 'respondido', label: 'Respondieron', count: p.respondido, color: '#00d4aa' },
+    { key: 'cat_interesado', label: 'Interesados', count: cats.interesado, color: '#00d4aa' },
+    { key: 'cat_analizando', label: 'Analizando', count: cats.analizando, color: '#ffd93d' },
+    { key: 'cat_no_interesado', label: 'No interesado', count: cats.no_interesado, color: '#ff6b6b' },
+    { key: 'cat_no_respondio', label: 'No respondio', count: cats.no_respondio, color: '#888' },
     { key: 'sin_whatsapp', label: 'Sin WA', count: p.sin_whatsapp, color: '#ff6b6b' },
     { key: 'enviado_legacy', label: 'Legacy', count: p.enviado_legacy, color: '#888' },
   ];
@@ -532,6 +537,13 @@ function renderOutreachTable() {
   if (pipelineFilter !== 'all') {
     leads = leads.filter(l => {
       const e = (l.estado_envio || '').toLowerCase();
+      const t = (l.tipo_respuesta || '').toLowerCase();
+      // Category filters
+      if (pipelineFilter === 'cat_interesado') return t === 'interesado';
+      if (pipelineFilter === 'cat_no_interesado') return t === 'no_interesado';
+      if (pipelineFilter === 'cat_analizando') return t === 'analizando';
+      if (pipelineFilter === 'cat_no_respondio') return t === 'no_respondio';
+      // Pipeline estado filters
       if (pipelineFilter === 'pendiente') return e === 'pendiente' || e === '';
       if (pipelineFilter === 'sin_whatsapp') return e === 'sin_whatsapp' || e === 'sin whatsapp';
       if (pipelineFilter === 'enviado_legacy') return e === 'enviado' || e === 'entregado';
@@ -563,23 +575,12 @@ function renderOutreachTable() {
               <div style="font-size:11px;color:#888">${escHtml(l.telefono)} ${l.ciudad ? '| ' + escHtml(l.ciudad) : ''}</div>
             </td>
             <td>${estadoBadge(l.estado_envio)}</td>
-            <td>${isRespondido ? (tipo ? tipoBadge(tipo) : '<span style="color:#666;font-size:11px">Sin categorizar</span>') : '-'}</td>
+            <td>${tipo ? tipoBadge(tipo) : (isRespondido ? '<span style="color:#666;font-size:11px">Sin categorizar</span>' : '-')}</td>
             <td style="font-size:12px;color:#aaa">${l.fecha_envio || '-'}</td>
             <td>${l.landing ? `<a href="${escHtml(l.landing)}" target="_blank" style="color:#4ecdc4;font-size:12px">Ver</a>` : '-'}</td>
             <td style="color:#ffd93d">${l.rating || '-'}</td>
             <td>
-              ${isRespondido ?
-                categoryBtnsHtml(l.telefono, tipo) :
-                (l.respondio ?
-                  categoryBtnsHtml(l.telefono, '') :
-                  `<div class="cat-btns">
-                    <button class="cat-btn cat-btn-interesado" onclick="event.stopPropagation();categorizar('${l.telefono}','interesado')">Interesado</button>
-                    <button class="cat-btn cat-btn-analizando" onclick="event.stopPropagation();categorizar('${l.telefono}','analizando')">Analizando</button>
-                    <button class="cat-btn cat-btn-no" onclick="event.stopPropagation();categorizar('${l.telefono}','no_interesado')">No int.</button>
-                    <button class="cat-btn cat-btn-noresp" onclick="event.stopPropagation();categorizar('${l.telefono}','no_respondio')">No resp.</button>
-                  </div>`
-                )
-              }
+              ${(isRespondido || tipo || l.respondio) ? categoryBtnsHtml(l.telefono, tipo) : ''}
               ${l.tieneConversacion ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px" onclick="goToChat('${l.telefono}')">Chat</button>` : ''}
             </td>
           </tr>`;
