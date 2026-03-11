@@ -147,6 +147,8 @@
   .cat-btn-no:hover { background: #5a1a1a; }
   .cat-btn-analizando { background: #3d3a0a; color: #ffd93d; }
   .cat-btn-analizando:hover { background: #5a560f; }
+  .cat-btn-noresp { background: #2a2a3a; color: #888; }
+  .cat-btn-noresp:hover { background: #3a3a4a; }
 
   /* Loading / Toast / Scrollbar */
   .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: #888; }
@@ -421,10 +423,11 @@ function renderStats() {
     <div class="stat-card"><div class="stat-value stat-yellow">${p.pendiente || 0}</div><div class="stat-label">Pendientes</div></div>
     <div class="stat-card"><div class="stat-value stat-purple">${p.respondido || 0}</div><div class="stat-label">Respondieron</div></div>
     <div class="stat-card">
-      <div style="display:flex;justify-content:center;gap:12px">
+      <div style="display:flex;justify-content:center;gap:10px">
         <div><span style="color:#00d4aa;font-weight:700;font-size:16px">${cats.interesado}</span><div style="font-size:9px;color:#888">Inter.</div></div>
         <div><span style="color:#ffd93d;font-weight:700;font-size:16px">${cats.analizando}</span><div style="font-size:9px;color:#888">Analiz.</div></div>
         <div><span style="color:#ff6b6b;font-weight:700;font-size:16px">${cats.no_interesado}</span><div style="font-size:9px;color:#888">No int.</div></div>
+        <div><span style="color:#888;font-weight:700;font-size:16px">${cats.no_respondio}</span><div style="font-size:9px;color:#888">No resp.</div></div>
       </div>
       <div class="stat-label">Categorias</div>
     </div>
@@ -433,7 +436,7 @@ function renderStats() {
 }
 
 function countCategories() {
-  const cats = { interesado: 0, no_interesado: 0, analizando: 0, sin_categoria: 0 };
+  const cats = { interesado: 0, no_interesado: 0, analizando: 0, no_respondio: 0, sin_categoria: 0 };
   if (!appData?.outreachLeads) return cats;
   for (const l of appData.outreachLeads) {
     const e = (l.estado_envio || '').toLowerCase();
@@ -442,6 +445,7 @@ function countCategories() {
       if (t === 'interesado') cats.interesado++;
       else if (t === 'no_interesado') cats.no_interesado++;
       else if (t === 'analizando') cats.analizando++;
+      else if (t === 'no_respondio') cats.no_respondio++;
       else cats.sin_categoria++;
     }
   }
@@ -489,6 +493,7 @@ function tipoBadge(tipo) {
   if (t === 'interesado') return '<span class="lead-badge badge-green">Interesado</span>';
   if (t === 'no_interesado') return '<span class="lead-badge badge-red">No interesado</span>';
   if (t === 'analizando') return '<span class="lead-badge badge-yellow">Analizando</span>';
+  if (t === 'no_respondio') return '<span class="lead-badge badge-gray">No respondio</span>';
   return '';
 }
 
@@ -507,13 +512,14 @@ function estadoBadge(e) {
 // Category buttons HTML
 function categoryBtnsHtml(telefono, currentTipo) {
   const t = (currentTipo || '').toLowerCase();
-  if (t === 'interesado' || t === 'no_interesado' || t === 'analizando') {
+  if (t === 'interesado' || t === 'no_interesado' || t === 'analizando' || t === 'no_respondio') {
     return tipoBadge(currentTipo) + ` <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="event.stopPropagation();undoRespondido('${telefono}')">Deshacer</button>`;
   }
   return `<div class="cat-btns">
     <button class="cat-btn cat-btn-interesado" onclick="event.stopPropagation();categorizar('${telefono}','interesado')" title="Interesado">Interesado</button>
     <button class="cat-btn cat-btn-analizando" onclick="event.stopPropagation();categorizar('${telefono}','analizando')" title="Analizando">Analizando</button>
     <button class="cat-btn cat-btn-no" onclick="event.stopPropagation();categorizar('${telefono}','no_interesado')" title="No interesado">No int.</button>
+    <button class="cat-btn cat-btn-noresp" onclick="event.stopPropagation();categorizar('${telefono}','no_respondio')" title="No respondio">No resp.</button>
   </div>`;
 }
 
@@ -569,6 +575,7 @@ function renderOutreachTable() {
                     <button class="cat-btn cat-btn-interesado" onclick="event.stopPropagation();categorizar('${l.telefono}','interesado')">Interesado</button>
                     <button class="cat-btn cat-btn-analizando" onclick="event.stopPropagation();categorizar('${l.telefono}','analizando')">Analizando</button>
                     <button class="cat-btn cat-btn-no" onclick="event.stopPropagation();categorizar('${l.telefono}','no_interesado')">No int.</button>
+                    <button class="cat-btn cat-btn-noresp" onclick="event.stopPropagation();categorizar('${l.telefono}','no_respondio')">No resp.</button>
                   </div>`
                 )
               }
@@ -643,13 +650,14 @@ function renderChat(lead) {
   const landingHtml = lead.landing ? `<a href="${escHtml(lead.landing)}" target="_blank" class="btn btn-sm btn-secondary" style="text-decoration:none">Ver Landing</a>` : '';
 
   let catHtml = '';
-  if (tipo === 'interesado' || tipo === 'no_interesado' || tipo === 'analizando') {
+  if (tipo === 'interesado' || tipo === 'no_interesado' || tipo === 'analizando' || tipo === 'no_respondio') {
     catHtml = `${tipoBadge(tipo)} <button class="btn btn-sm btn-danger" onclick="undoRespondidoSelected()">Deshacer</button>`;
   } else {
     catHtml = `
       <button class="cat-btn cat-btn-interesado" style="padding:6px 14px;font-size:12px" onclick="categorizarSelected('interesado')">Interesado</button>
       <button class="cat-btn cat-btn-analizando" style="padding:6px 14px;font-size:12px" onclick="categorizarSelected('analizando')">Analizando</button>
       <button class="cat-btn cat-btn-no" style="padding:6px 14px;font-size:12px" onclick="categorizarSelected('no_interesado')">No interesado</button>
+      <button class="cat-btn cat-btn-noresp" style="padding:6px 14px;font-size:12px" onclick="categorizarSelected('no_respondio')">No respondio</button>
     `;
   }
 
