@@ -441,11 +441,12 @@ function countCategories() {
   for (const l of appData.outreachLeads) {
     const e = (l.estado_envio || '').toLowerCase();
     const t = (l.tipo_respuesta || '').toLowerCase();
+    // no_respondio puede estar en cualquier estado (no cambia estado_envio)
+    if (t === 'no_respondio') { cats.no_respondio++; continue; }
     if (e === 'respondido') {
       if (t === 'interesado') cats.interesado++;
       else if (t === 'no_interesado') cats.no_interesado++;
       else if (t === 'analizando') cats.analizando++;
-      else if (t === 'no_respondio') cats.no_respondio++;
       else cats.sin_categoria++;
     }
   }
@@ -680,10 +681,12 @@ function renderChat(lead) {
 async function categorizar(telefono, tipo) {
   try {
     showToast('Categorizando como ' + tipo.replace('_', ' ') + '...');
+    // "no_respondio" solo marca tipo_respuesta sin cambiar estado_envio
+    const action = tipo === 'no_respondio' ? 'no_respondio' : 'respondido';
     const r = await fetch(`${API_BASE}/odonto-mark-respondido`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ telefono, action: 'respondido', tipo_respuesta: tipo })
+      body: JSON.stringify({ telefono, action, tipo_respuesta: tipo })
     });
     const result = await r.json();
     if (result.ok) {
