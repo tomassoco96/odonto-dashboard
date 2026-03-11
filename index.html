@@ -87,7 +87,7 @@
   .chat-header { padding: 14px 24px; border-bottom: 1px solid #1a1a3e; background: #12122a; display: flex; align-items: center; justify-content: space-between; }
   .chat-header-info h2 { font-size: 15px; color: #fff; }
   .chat-header-info p { font-size: 12px; color: #888; margin-top: 2px; }
-  .chat-header-actions { display: flex; gap: 8px; align-items: center; }
+  .chat-header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 8px; }
   .chat-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: #555; font-size: 15px; }
   .msg { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; word-wrap: break-word; }
@@ -128,6 +128,26 @@
   .outreach-table tr:hover { background: #1a1a3e; }
   .outreach-table-wrap { background: #12122a; border-radius: 12px; border: 1px solid #2a2a5a; overflow: auto; max-height: calc(100vh - 380px); }
 
+  /* Quick Replies Panel */
+  .replies-panel { display: none; flex: 1; overflow-y: auto; padding: 24px; flex-direction: column; gap: 16px; }
+  .replies-panel.active { display: flex; }
+  .reply-card { background: #12122a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a5a; }
+  .reply-card h3 { color: #00d4aa; font-size: 15px; margin-bottom: 4px; }
+  .reply-card .reply-desc { font-size: 12px; color: #888; margin-bottom: 12px; }
+  .reply-card .reply-text { background: #0f0f25; border: 1px solid #1a1a3e; border-radius: 8px; padding: 14px; font-size: 13px; line-height: 1.6; color: #ccc; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+  .reply-card .reply-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .reply-card .reply-note { font-size: 11px; color: #666; margin-top: 8px; font-style: italic; }
+
+  /* Category buttons */
+  .cat-btns { display: inline-flex; gap: 4px; }
+  .cat-btn { padding: 4px 10px; border-radius: 6px; border: none; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+  .cat-btn-interesado { background: #0a3d2e; color: #00d4aa; }
+  .cat-btn-interesado:hover { background: #0d5a42; }
+  .cat-btn-no { background: #3d0a0a; color: #ff6b6b; }
+  .cat-btn-no:hover { background: #5a1a1a; }
+  .cat-btn-analizando { background: #3d3a0a; color: #ffd93d; }
+  .cat-btn-analizando:hover { background: #5a560f; }
+
   /* Loading / Toast / Scrollbar */
   .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: #888; }
   .spinner { border: 3px solid #2a2a5a; border-top: 3px solid #00d4aa; border-radius: 50%; width: 30px; height: 30px; animation: spin 0.8s linear infinite; margin-right: 12px; }
@@ -156,7 +176,7 @@
 <div id="login">
   <div class="login-box">
     <h1>Odontologos BA</h1>
-    <p>Panel de Control — Outreach + Conversaciones</p>
+    <p>Panel de Control - Outreach + Conversaciones</p>
     <input type="password" id="loginPassword" placeholder="Contrasena" autofocus>
     <button onclick="doLogin()">Entrar</button>
     <div class="login-error" id="loginError">Contrasena incorrecta</div>
@@ -181,6 +201,7 @@
     <div class="tab active" data-tab="outreach" onclick="switchTab('outreach')">Outreach</div>
     <div class="tab" data-tab="chats" onclick="switchTab('chats')">Conversaciones</div>
     <div class="tab" data-tab="analysis" onclick="switchTab('analysis')">Analisis IA</div>
+    <div class="tab" data-tab="replies" onclick="switchTab('replies')">Respuestas</div>
   </div>
 
   <div class="main">
@@ -207,10 +228,8 @@
             <h2 id="chatName">-</h2>
             <p id="chatMeta">-</p>
           </div>
-          <div class="chat-header-actions">
-            <button class="btn btn-sm btn-primary" id="btnMarkResp" onclick="markRespondido()">Marcar respondido</button>
-            <button class="btn btn-sm btn-danger" id="btnUndoResp" onclick="undoRespondidoSelected()" style="display:none">Deshacer</button>
-            <a id="chatLanding" href="#" target="_blank" class="btn btn-sm btn-secondary" style="text-decoration:none;display:none">Ver Landing</a>
+          <div class="chat-header-actions" id="chatHeaderActions">
+            <!-- Category buttons rendered dynamically -->
           </div>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
@@ -222,6 +241,11 @@
       <div id="analysisContent">
         <div class="loading"><div class="spinner"></div>Cargando analisis...</div>
       </div>
+    </div>
+
+    <!-- Quick Replies Panel -->
+    <div class="replies-panel" id="repliesPanel">
+      <div id="repliesContent"></div>
     </div>
   </div>
 </div>
@@ -282,6 +306,70 @@ let appData = null;
 let selectedLead = null;
 let pipelineFilter = 'all';
 
+// Quick reply templates
+const QUICK_REPLIES = [
+  {
+    id: 'interesado',
+    title: 'Interesado',
+    desc: 'Cuando el lead dice "me interesa" o quiere saber mas',
+    text: `Buenísimo [NOMBRE]! Te cuento cómo funciona:
+
+Yo te armo la página web personalizada para tu consultorio de manera gratuita. La probás durante 30 días y ves si te genera consultas nuevas.
+
+Si te funciona y querés mantenerla activa, el costo es de $60.000/mes. Incluye dominio personalizado (el www que vos elijas), servidor, y cualquier modificación que necesites. Sin contrato, sin permanencia.
+
+Si no te convence, se desactiva y no hay ningún compromiso.
+
+Para armarla necesito que completes este formulario rápido (3 min) con los datos de tu consultorio:
+https://tally.so/r/BzGGj5
+
+Con eso te la tengo lista en 24-48hs.`
+  },
+  {
+    id: 'precio',
+    title: 'Pregunta precio',
+    desc: 'Cuando preguntan "cuanto cuesta?" o "cual es el costo?"',
+    text: `La instalación es gratuita. Te la armo sin costo para que la pruebes 30 días.
+
+Si te funciona y querés mantenerla, el mantenimiento mensual es de $60.000 que incluye todo: dominio personalizado, servidor, y cualquier cambio que necesites.
+
+Sin contrato ni permanencia. Si no te convence se desactiva y listo, sin compromiso.
+
+Querés que arranquemos? Te paso un formulario cortito para armarla con tus datos.`
+  },
+  {
+    id: 'no_interesado',
+    title: 'No interesado',
+    desc: 'Cuando dicen "no gracias" o "no me interesa"',
+    text: `Entendido, ningún problema! Si más adelante necesitás algo con la parte digital del consultorio, escribime tranquilo/a. Éxitos!`
+  },
+  {
+    id: 'secretaria',
+    title: 'Secretaria',
+    desc: 'Cuando la secretaria dice "le paso al doctor/a"',
+    text: `Perfecto, gracias! Le comento que la instalación es sin costo y sin compromiso. El doctor/a puede probar la página durante 30 días gratis.
+
+Si quiere, le pueden compartir este link donde hay una demo de cómo quedaría para un consultorio como el suyo: [LINK_DEMO]
+
+Quedo atento por cualquier consulta.`
+  },
+  {
+    id: 'formulario',
+    title: 'Explicar formulario',
+    desc: 'Cuando necesitas explicar cómo es la personalización',
+    text: `Te explico rápido cómo funciona para armar tu página:
+
+Completás este formulario con los datos de tu consultorio (nombre, dirección, teléfono, especialidades, etc.):
+https://tally.so/r/BzGGj5
+
+Son 3 minutos, nada complicado. También podés subir fotos del consultorio, del equipo, o las que quieras que aparezcan en la web. Eso le da un toque mucho más profesional y personal.
+
+Con esa info yo te armo la página personalizada y te la mando para que la revises. Si querés cambiar algo (colores, textos, fotos, lo que sea), me decís y lo ajusto sin problema.
+
+Todo esto es sin costo y sin compromiso. La idea es que veas cómo quedaría antes de decidir nada.`
+  }
+];
+
 function doLogin() {
   if (document.getElementById('loginPassword').value === PASSWORD) {
     document.getElementById('login').style.display = 'none';
@@ -308,6 +396,7 @@ async function refreshData() {
       renderChat(selectedLead);
     }
     renderAnalysis();
+    renderQuickReplies();
     document.getElementById('lastUpdate').textContent = 'Act: ' + new Date().toLocaleTimeString('es-AR');
   } catch(e) {
     showToast('Error al cargar datos: ' + e.message);
@@ -323,14 +412,40 @@ function renderStats() {
   const ta = appData.todayActivity || {};
   const contactados = (p.wa_inicial || 0) + (p.wa_followup1 || 0) + (p.wa_breakup || 0) + (p.respondido || 0) + (p.enviado_legacy || 0);
 
+  // Count categories from outreach leads
+  const cats = countCategories();
+
   document.getElementById('statsBar').innerHTML = `
     <div class="stat-card"><div class="stat-value stat-green">${s.totalCalientes || 0}</div><div class="stat-label">Leads Calientes</div></div>
     <div class="stat-card"><div class="stat-value stat-blue">${contactados}</div><div class="stat-label">Contactados</div></div>
     <div class="stat-card"><div class="stat-value stat-yellow">${p.pendiente || 0}</div><div class="stat-label">Pendientes</div></div>
-    <div class="stat-card"><div class="stat-value stat-purple">${s.respondieron || 0}</div><div class="stat-label">Respondieron</div></div>
+    <div class="stat-card"><div class="stat-value stat-purple">${p.respondido || 0}</div><div class="stat-label">Respondieron</div></div>
+    <div class="stat-card">
+      <div style="display:flex;justify-content:center;gap:12px">
+        <div><span style="color:#00d4aa;font-weight:700;font-size:16px">${cats.interesado}</span><div style="font-size:9px;color:#888">Inter.</div></div>
+        <div><span style="color:#ffd93d;font-weight:700;font-size:16px">${cats.analizando}</span><div style="font-size:9px;color:#888">Analiz.</div></div>
+        <div><span style="color:#ff6b6b;font-weight:700;font-size:16px">${cats.no_interesado}</span><div style="font-size:9px;color:#888">No int.</div></div>
+      </div>
+      <div class="stat-label">Categorias</div>
+    </div>
     <div class="stat-card"><div class="stat-value stat-orange">${ta.sentToday || 0}</div><div class="stat-label">Hoy</div></div>
-    <div class="stat-card"><div class="stat-value stat-red">${p.sin_whatsapp || 0}</div><div class="stat-label">Sin WA</div></div>
   `;
+}
+
+function countCategories() {
+  const cats = { interesado: 0, no_interesado: 0, analizando: 0, sin_categoria: 0 };
+  if (!appData?.outreachLeads) return cats;
+  for (const l of appData.outreachLeads) {
+    const e = (l.estado_envio || '').toLowerCase();
+    const t = (l.tipo_respuesta || '').toLowerCase();
+    if (e === 'respondido') {
+      if (t === 'interesado') cats.interesado++;
+      else if (t === 'no_interesado') cats.no_interesado++;
+      else if (t === 'analizando') cats.analizando++;
+      else cats.sin_categoria++;
+    }
+  }
+  return cats;
 }
 
 // Pipeline
@@ -368,6 +483,40 @@ function filterPipeline(key) {
   renderOutreachTable();
 }
 
+// Category badge helper
+function tipoBadge(tipo) {
+  const t = (tipo || '').toLowerCase();
+  if (t === 'interesado') return '<span class="lead-badge badge-green">Interesado</span>';
+  if (t === 'no_interesado') return '<span class="lead-badge badge-red">No interesado</span>';
+  if (t === 'analizando') return '<span class="lead-badge badge-yellow">Analizando</span>';
+  return '';
+}
+
+function estadoBadge(e) {
+  const el = (e || '').toLowerCase();
+  if (el === 'pendiente' || el === '') return '<span class="lead-badge badge-yellow">Pendiente</span>';
+  if (el === 'wa_inicial') return '<span class="lead-badge badge-blue">WA Inicial</span>';
+  if (el === 'wa_followup1') return '<span class="lead-badge badge-purple">Followup</span>';
+  if (el === 'wa_breakup') return '<span class="lead-badge badge-gray">Breakup</span>';
+  if (el === 'respondido') return '<span class="lead-badge badge-green">Respondido</span>';
+  if (el === 'sin_whatsapp' || el === 'sin whatsapp') return '<span class="lead-badge badge-red">Sin WA</span>';
+  if (el === 'enviado' || el === 'entregado') return '<span class="lead-badge badge-gray">Legacy</span>';
+  return `<span class="lead-badge badge-gray">${escHtml(e)}</span>`;
+}
+
+// Category buttons HTML
+function categoryBtnsHtml(telefono, currentTipo) {
+  const t = (currentTipo || '').toLowerCase();
+  if (t === 'interesado' || t === 'no_interesado' || t === 'analizando') {
+    return tipoBadge(currentTipo) + ` <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="event.stopPropagation();undoRespondido('${telefono}')">Deshacer</button>`;
+  }
+  return `<div class="cat-btns">
+    <button class="cat-btn cat-btn-interesado" onclick="event.stopPropagation();categorizar('${telefono}','interesado')" title="Interesado">Interesado</button>
+    <button class="cat-btn cat-btn-analizando" onclick="event.stopPropagation();categorizar('${telefono}','analizando')" title="Analizando">Analizando</button>
+    <button class="cat-btn cat-btn-no" onclick="event.stopPropagation();categorizar('${telefono}','no_interesado')" title="No interesado">No int.</button>
+  </div>`;
+}
+
 // Outreach Table
 function renderOutreachTable() {
   if (!appData?.outreachLeads) return;
@@ -383,47 +532,50 @@ function renderOutreachTable() {
     });
   }
 
-  const estadoBadge = (e) => {
-    const el = (e || '').toLowerCase();
-    if (el === 'pendiente' || el === '') return '<span class="lead-badge badge-yellow">Pendiente</span>';
-    if (el === 'wa_inicial') return '<span class="lead-badge badge-blue">WA Inicial</span>';
-    if (el === 'wa_followup1') return '<span class="lead-badge badge-purple">Followup</span>';
-    if (el === 'wa_breakup') return '<span class="lead-badge badge-gray">Breakup</span>';
-    if (el === 'respondido') return '<span class="lead-badge badge-green">Respondido</span>';
-    if (el === 'sin_whatsapp' || el === 'sin whatsapp') return '<span class="lead-badge badge-red">Sin WA</span>';
-    if (el === 'enviado' || el === 'entregado') return '<span class="lead-badge badge-gray">Legacy</span>';
-    return `<span class="lead-badge badge-gray">${escHtml(e)}</span>`;
-  };
-
   document.getElementById('outreachTableSection').innerHTML = `
     <div class="outreach-table-wrap">
       <table class="outreach-table">
         <thead><tr>
           <th>Lead</th>
           <th>Estado</th>
+          <th>Categoria</th>
           <th>Fecha envio</th>
           <th>Landing</th>
           <th>Rating</th>
           <th>Acciones</th>
         </tr></thead>
         <tbody>
-          ${leads.map(l => `<tr>
+          ${leads.map(l => {
+            const estado = (l.estado_envio || '').toLowerCase();
+            const isRespondido = estado === 'respondido';
+            const tipo = l.tipo_respuesta || '';
+
+            return `<tr>
             <td>
               <strong>${escHtml(l.nombre)}</strong>
               <div style="font-size:11px;color:#888">${escHtml(l.telefono)} ${l.ciudad ? '| ' + escHtml(l.ciudad) : ''}</div>
             </td>
             <td>${estadoBadge(l.estado_envio)}</td>
+            <td>${isRespondido ? (tipo ? tipoBadge(tipo) : '<span style="color:#666;font-size:11px">Sin categorizar</span>') : '-'}</td>
             <td style="font-size:12px;color:#aaa">${l.fecha_envio || '-'}</td>
             <td>${l.landing ? `<a href="${escHtml(l.landing)}" target="_blank" style="color:#4ecdc4;font-size:12px">Ver</a>` : '-'}</td>
             <td style="color:#ffd93d">${l.rating || '-'}</td>
             <td>
-              ${l.respondio ? '<span style="color:#00d4aa;font-size:12px">Respondio</span>' :
-                (l.estado_envio || '').toLowerCase() !== 'respondido' ?
-                `<button class="btn btn-sm btn-primary" onclick="markRespondidoByPhone('${l.telefono}')">Respondido</button>` :
-                `<span style="color:#00d4aa;font-size:12px">Marcado</span> <button class="btn btn-sm btn-danger" style="margin-left:4px" onclick="undoRespondido('${l.telefono}')">Deshacer</button>`}
+              ${isRespondido ?
+                categoryBtnsHtml(l.telefono, tipo) :
+                (l.respondio ?
+                  categoryBtnsHtml(l.telefono, '') :
+                  `<div class="cat-btns">
+                    <button class="cat-btn cat-btn-interesado" onclick="event.stopPropagation();categorizar('${l.telefono}','interesado')">Interesado</button>
+                    <button class="cat-btn cat-btn-analizando" onclick="event.stopPropagation();categorizar('${l.telefono}','analizando')">Analizando</button>
+                    <button class="cat-btn cat-btn-no" onclick="event.stopPropagation();categorizar('${l.telefono}','no_interesado')">No int.</button>
+                  </div>`
+                )
+              }
               ${l.tieneConversacion ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px" onclick="goToChat('${l.telefono}')">Chat</button>` : ''}
             </td>
-          </tr>`).join('')}
+          </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>
@@ -453,6 +605,7 @@ function renderLeadList() {
     const time = lastMsg ? formatTime(lastMsg.timestamp) : '';
     const initial = (l.nombre || '?')[0].toUpperCase();
     const isActive = selectedLead?.telefono === l.telefono;
+    const tipo = l.tipo_respuesta || '';
 
     return `<div class="lead-item ${isActive ? 'active' : ''}" onclick="selectLead('${l.telefono}')">
       <div class="lead-avatar ${l.respondio ? 'responded' : 'no-response'}">${initial}</div>
@@ -462,7 +615,7 @@ function renderLeadList() {
       </div>
       <div class="lead-meta">
         <div class="lead-time">${time}</div>
-        <div class="lead-badge ${l.respondio ? 'badge-green' : 'badge-red'}">${l.respondio ? 'Respondio' : 'Sin resp.'}</div>
+        ${tipo ? tipoBadge(tipo) : `<div class="lead-badge ${l.respondio ? 'badge-green' : 'badge-red'}">${l.respondio ? 'Respondio' : 'Sin resp.'}</div>`}
       </div>
     </div>`;
   }).join('');
@@ -483,21 +636,24 @@ function renderChat(lead) {
   document.getElementById('chatName').textContent = lead.nombre || lead.telefono;
   document.getElementById('chatMeta').textContent = `${lead.telefono} | ${lead.salientes} enviados, ${lead.entrantes} recibidos | ${lead.estado_envio || 'sin estado'}`;
 
-  const landingBtn = document.getElementById('chatLanding');
-  if (lead.landing) { landingBtn.style.display = 'inline-block'; landingBtn.href = lead.landing; }
-  else { landingBtn.style.display = 'none'; }
+  // Render chat header actions with category buttons
+  const actions = document.getElementById('chatHeaderActions');
+  const estado = (lead.estado_envio || '').toLowerCase();
+  const tipo = (lead.tipo_respuesta || '').toLowerCase();
+  const landingHtml = lead.landing ? `<a href="${escHtml(lead.landing)}" target="_blank" class="btn btn-sm btn-secondary" style="text-decoration:none">Ver Landing</a>` : '';
 
-  const btnResp = document.getElementById('btnMarkResp');
-  const btnUndo = document.getElementById('btnUndoResp');
-  if ((lead.estado_envio || '').toLowerCase() === 'respondido') {
-    btnResp.textContent = 'Ya marcado';
-    btnResp.disabled = true;
-    btnUndo.style.display = 'inline-block';
+  let catHtml = '';
+  if (tipo === 'interesado' || tipo === 'no_interesado' || tipo === 'analizando') {
+    catHtml = `${tipoBadge(tipo)} <button class="btn btn-sm btn-danger" onclick="undoRespondidoSelected()">Deshacer</button>`;
   } else {
-    btnResp.textContent = 'Marcar respondido';
-    btnResp.disabled = false;
-    btnUndo.style.display = 'none';
+    catHtml = `
+      <button class="cat-btn cat-btn-interesado" style="padding:6px 14px;font-size:12px" onclick="categorizarSelected('interesado')">Interesado</button>
+      <button class="cat-btn cat-btn-analizando" style="padding:6px 14px;font-size:12px" onclick="categorizarSelected('analizando')">Analizando</button>
+      <button class="cat-btn cat-btn-no" style="padding:6px 14px;font-size:12px" onclick="categorizarSelected('no_interesado')">No interesado</button>
+    `;
   }
+
+  actions.innerHTML = catHtml + landingHtml;
 
   const container = document.getElementById('chatMessages');
   let lastDate = '', html = '';
@@ -512,23 +668,18 @@ function renderChat(lead) {
   container.scrollTop = container.scrollHeight;
 }
 
-// Mark respondido
-async function markRespondido() {
-  if (!selectedLead) return;
-  await markRespondidoByPhone(selectedLead.telefono);
-}
-
-async function markRespondidoByPhone(telefono) {
+// Categorize lead (mark as respondido + set tipo_respuesta)
+async function categorizar(telefono, tipo) {
   try {
-    showToast('Marcando como respondido...');
+    showToast('Categorizando como ' + tipo.replace('_', ' ') + '...');
     const r = await fetch(`${API_BASE}/odonto-mark-respondido`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ telefono, action: 'respondido' })
+      body: JSON.stringify({ telefono, action: 'respondido', tipo_respuesta: tipo })
     });
     const result = await r.json();
     if (result.ok) {
-      showToast('Marcado como respondido');
+      showToast('Categorizado como ' + tipo.replace('_', ' '));
       await refreshData();
     } else {
       showToast('Error: ' + (result.error || 'desconocido'));
@@ -536,6 +687,17 @@ async function markRespondidoByPhone(telefono) {
   } catch(e) {
     showToast('Error: ' + e.message);
   }
+}
+
+async function categorizarSelected(tipo) {
+  if (!selectedLead) return;
+  await categorizar(selectedLead.telefono, tipo);
+}
+
+// Legacy simple mark (kept for compatibility)
+async function markRespondido() {
+  if (!selectedLead) return;
+  await categorizar(selectedLead.telefono, '');
 }
 
 async function undoRespondidoSelected() {
@@ -561,6 +723,43 @@ async function undoRespondido(telefono) {
   } catch(e) {
     showToast('Error: ' + e.message);
   }
+}
+
+// Quick Replies
+function renderQuickReplies() {
+  const container = document.getElementById('repliesContent');
+  container.innerHTML = `
+    <h2 style="color:#00d4aa;margin-bottom:16px">Respuestas rapidas</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:20px">Templates listos para copiar y pegar en WhatsApp. Reemplaza [NOMBRE] y [LINK_DEMO] segun el lead.</p>
+    ${QUICK_REPLIES.map(r => `
+      <div class="reply-card">
+        <h3>${escHtml(r.title)}</h3>
+        <div class="reply-desc">${escHtml(r.desc)}</div>
+        <div class="reply-text" id="reply-${r.id}">${escHtml(r.text)}</div>
+        <div class="reply-actions">
+          <button class="btn btn-sm btn-primary" onclick="copyReply('${r.id}')">Copiar</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function copyReply(id) {
+  const el = document.getElementById('reply-' + id);
+  if (!el) return;
+  const text = el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Copiado al portapapeles!');
+  }).catch(() => {
+    // Fallback
+    const range = document.createRange();
+    range.selectNode(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    showToast('Copiado!');
+  });
 }
 
 // Analysis
@@ -598,6 +797,8 @@ function switchTab(tab) {
   document.getElementById('chatArea').style.display = tab === 'chats' ? 'flex' : 'none';
   document.getElementById('analysisPanel').style.display = tab === 'analysis' ? 'block' : 'none';
   document.getElementById('analysisPanel').classList.toggle('active', tab === 'analysis');
+  document.getElementById('repliesPanel').style.display = tab === 'replies' ? 'flex' : 'none';
+  document.getElementById('repliesPanel').classList.toggle('active', tab === 'replies');
 }
 
 // Actions
