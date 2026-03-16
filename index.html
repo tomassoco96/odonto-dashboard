@@ -401,6 +401,19 @@ Son 3 minutos, nada complicado. También podés subir fotos del consultorio, del
 Con esa info yo te armo la página personalizada y te la mando para que la revises. Si querés cambiar algo (colores, textos, fotos, lo que sea), me decís y lo ajusto sin problema.
 
 Todo esto es sin costo y sin compromiso. La idea es que veas cómo quedaría antes de decidir nada.`
+  },
+  {
+    id: 'enviar_pagina',
+    title: 'Enviar página web',
+    desc: 'Cuando la página personalizada está lista para enviar al cliente',
+    text: `Hola [NOMBRE]! Ya tenemos lista tu página web personalizada:
+[LINK_LANDING]
+
+Dale una mirada y decime qué te parece. Si querés cambiar algo (fotos, textos, colores, lo que sea), me avisás y lo ajusto sin problema.
+
+La página va a estar activa durante 30 días de prueba, sin costo ni compromiso. La idea es que veas si te genera consultas nuevas.
+
+Cualquier duda me escribís por acá.`
   }
 ];
 
@@ -614,6 +627,7 @@ function renderOutreachTable() {
             <td style="color:#ffd93d">${l.rating || '-'}</td>
             <td>
               ${(isRespondido || tipo || l.respondio) ? categoryBtnsHtml(l.telefono, tipo) : ''}
+              ${tipo === 'interesado' ? `<button class="btn btn-sm" style="background:#0a3d2e;color:#00d4aa;margin-left:4px" onclick="event.stopPropagation();crearCliente('${escHtml(l.nombre).replace(/'/g,"\\'")}','${l.telefono}','${(l.ciudad||'').replace(/'/g,"\\'")}','${(l.email||'').replace(/'/g,"\\'")}','${(l.landing||'').replace(/'/g,"\\'")}')">Crear cliente</button>` : ''}
               ${l.tieneConversacion ? `<button class="btn btn-sm btn-secondary" style="margin-left:4px" onclick="goToChat('${l.telefono}')">Chat</button>` : ''}
             </td>
           </tr>`;
@@ -971,6 +985,25 @@ async function updateEstadoCliente(row, nuevoEstado) {
     const result = await r.json();
     if (result.ok) {
       showToast('Estado actualizado a ' + nuevoEstado);
+      await refreshData();
+    } else {
+      showToast('Error: ' + (result.error || 'desconocido'));
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+async function crearCliente(nombre, telefono, ciudad, email, landing) {
+  if (!confirm(`Crear cliente "${nombre}" en prueba por 30 dias?`)) return;
+  try {
+    showToast('Creando cliente...');
+    const r = await fetch(`${API_BASE}/odonto-crear-cliente`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, telefono, ciudad, email, url_landing: landing })
+    });
+    const result = await r.json();
+    if (result.ok) {
+      showToast('Cliente creado en prueba!');
       await refreshData();
     } else {
       showToast('Error: ' + (result.error || 'desconocido'));
