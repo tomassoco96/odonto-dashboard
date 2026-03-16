@@ -482,11 +482,12 @@ function renderStats() {
 }
 
 function countCategories() {
-  const cats = { interesado: 0, no_interesado: 0, analizando: 0, no_respondio: 0, sin_categoria: 0 };
+  const cats = { interesado: 0, no_interesado: 0, analizando: 0, no_respondio: 0, cliente: 0, sin_categoria: 0 };
   if (!appData?.outreachLeads) return cats;
   for (const l of appData.outreachLeads) {
     const e = (l.estado_envio || '').toLowerCase();
     const t = (l.tipo_respuesta || '').toLowerCase();
+    if (t === 'cliente') { cats.cliente++; continue; }
     // no_respondio puede estar en cualquier estado (no cambia estado_envio)
     if (t === 'no_respondio') { cats.no_respondio++; continue; }
     if (e === 'respondido') {
@@ -512,6 +513,7 @@ function renderPipeline() {
     { key: 'wa_breakup', label: 'Breakup', count: p.wa_breakup, color: '#f6a94b' },
     { key: 'respondido', label: 'Respondieron', count: p.respondido, color: '#00d4aa' },
     { key: 'cat_interesado', label: 'Interesados', count: cats.interesado, color: '#00d4aa' },
+    { key: 'cat_cliente', label: 'Clientes', count: cats.cliente, color: '#4ecdc4' },
     { key: 'cat_analizando', label: 'Analizando', count: cats.analizando, color: '#ffd93d' },
     { key: 'cat_no_interesado', label: 'No interesado', count: cats.no_interesado, color: '#ff6b6b' },
     { key: 'cat_no_respondio', label: 'No respondio', count: cats.no_respondio, color: '#888' },
@@ -543,6 +545,7 @@ function filterPipeline(key) {
 function tipoBadge(tipo) {
   const t = (tipo || '').toLowerCase();
   if (t === 'interesado') return '<span class="lead-badge badge-green">Interesado</span>';
+  if (t === 'cliente') return '<span class="lead-badge" style="background:#0a3d2e;color:#4ecdc4">Cliente</span>';
   if (t === 'no_interesado') return '<span class="lead-badge badge-red">No interesado</span>';
   if (t === 'analizando') return '<span class="lead-badge badge-yellow">Analizando</span>';
   if (t === 'no_respondio') return '<span class="lead-badge badge-gray">No respondio</span>';
@@ -586,6 +589,7 @@ function renderOutreachTable() {
       const t = (l.tipo_respuesta || '').toLowerCase();
       // Category filters
       if (pipelineFilter === 'cat_interesado') return t === 'interesado';
+      if (pipelineFilter === 'cat_cliente') return t === 'cliente';
       if (pipelineFilter === 'cat_no_interesado') return t === 'no_interesado';
       if (pipelineFilter === 'cat_analizando') return t === 'analizando';
       if (pipelineFilter === 'cat_no_respondio') return t === 'no_respondio';
