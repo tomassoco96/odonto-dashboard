@@ -335,6 +335,13 @@
 <script>
 const API_BASE = 'https://n8n.srv1364640.hstgr.cloud/webhook';
 const PASSWORD = 'odonto2026';
+
+// Safe JSON parser: handles empty responses from n8n when workflow errors
+async function safeJson(response) {
+  const text = await response.text();
+  if (!text) throw new Error('El servidor no devolvio respuesta (workflow con error interno)');
+  try { return JSON.parse(text); } catch(e) { throw new Error('Respuesta invalida del servidor: ' + text.substring(0, 100)); }
+}
 let appData = null;
 let selectedLead = null;
 let pipelineFilter = 'all';
@@ -738,7 +745,7 @@ async function categorizar(telefono, tipo) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ telefono, action, tipo_respuesta: tipo })
     });
-    const result = await r.json();
+    const result = await safeJson(r);
     if (result.ok) {
       showToast('Categorizado como ' + tipo.replace('_', ' '));
       await refreshData();
@@ -774,7 +781,7 @@ async function undoRespondido(telefono) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ telefono, action: 'undo' })
     });
-    const result = await r.json();
+    const result = await safeJson(r);
     if (result.ok) {
       showToast('Revertido a ' + result.newEstado);
       await refreshData();
@@ -957,7 +964,7 @@ async function markPaginaEnviada(row) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ row, campo: 'estado_pagina', valor: 'enviada', fecha_campo: 'fecha_envio_pagina' })
     });
-    const result = await r.json();
+    const result = await safeJson(r);
     if (result.ok) {
       showToast('Marcada como enviada');
       await refreshData();
@@ -984,7 +991,7 @@ async function updateEstadoCliente(row, nuevoEstado) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const result = await r.json();
+    const result = await safeJson(r);
     if (result.ok) {
       showToast('Estado actualizado a ' + nuevoEstado);
       await refreshData();
@@ -1003,7 +1010,7 @@ async function crearCliente(nombre, telefono, ciudad, email, landing) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, telefono, ciudad, email, url_landing: landing })
     });
-    const result = await r.json();
+    const result = await safeJson(r);
     if (result.ok) {
       showToast('Cliente creado en prueba!');
       await refreshData();
@@ -1133,7 +1140,7 @@ async function createLanding() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const result = await r.json();
+    const result = await safeJson(r);
     if (result.ok) {
       const box = document.getElementById('landingResult');
       const link = document.getElementById('landingUrl');
