@@ -740,10 +740,12 @@ async function categorizar(telefono, tipo) {
     showToast('Categorizando como ' + tipo.replace('_', ' ') + '...');
     // "no_respondio" solo marca tipo_respuesta sin cambiar estado_envio
     const action = tipo === 'no_respondio' ? 'no_respondio' : 'respondido';
+    // Include nombre for leads not yet in sheet (conversations tab)
+    const nombre = selectedLead?.nombre || '';
     const r = await fetch(`${API_BASE}/odonto-mark-respondido`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ telefono, action, tipo_respuesta: tipo })
+      body: JSON.stringify({ telefono, action, tipo_respuesta: tipo, nombre })
     });
     const result = await safeJson(r);
     if (result.ok) {
